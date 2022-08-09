@@ -31,5 +31,6 @@ minify: js_full
 	rm temp/out.js
 
 pack: minify
+#	test -f dist.zip && rm dist.zip
 	(cd temp; zip -r ../dist.zip .)
 	advzip -z dist.zip
