@@ -110,6 +110,13 @@ export class Canvas {
     }
 
 
+    public setAlpha(a = 1.0) : Canvas {
+
+        this.ctx.globalAlpha = clamp(a, 0.0, 1.0);
+        return this;
+    }
+
+
     public fillRect(x = 0, y = 0, w = this.width, h = this.height) : Canvas {
 
         this.ctx.fillRect(x | 0, y | 0, w | 0, h | 0);
@@ -176,6 +183,31 @@ export class Canvas {
             return this;
 
         return this.drawBitmapRegion(bmp, 0, 0, bmp.width, bmp.height, dx, dy, flip);
+    }
+
+
+    public fillEllipse(cx : number, cy : number, w : number, h : number) : Canvas {
+
+        const EPS = 2.0;
+
+        if (w < EPS || h < EPS)
+            return this;
+
+        cx |= 0;
+        cy |= 0;    
+
+        w /= 2;
+        h /= 2;
+
+        let rh = Math.round(h);
+        let dw = 0;
+
+        for (let y = cy - rh; y <= cy + rh; ++ y) {
+
+            dw = Math.round(w * Math.sqrt(1 - ((y - cy)*(y - cy)) / (h*h)));
+            this.fillRect(cx - dw, y, dw*2, 1);   
+        }
+        return this;
     }
 
 

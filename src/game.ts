@@ -134,6 +134,32 @@ export class Game {
     }
 
 
+    private drawRabbit(canvas : Canvas) : void {
+
+        const ANIM_SRC = [0, 1, 0, 2];
+        const AMPLITUDE = 16;
+        const SCALE_FACTOR = 64;
+
+        let animFrame = (this.animTimer | 0);
+        let sx = ANIM_SRC[animFrame] * 32;
+
+        let dx = canvas.width/2;
+        let dy = canvas.height/2 + Math.round(Math.sin(this.backgroundTimer)*AMPLITUDE);
+
+        let shadowy = canvas.height/2 + AMPLITUDE;
+        let scale = 1.0 - Math.abs(dy - shadowy) / SCALE_FACTOR;
+
+        canvas.setAlpha(0.33)
+              .setFillColor(0)
+              .fillEllipse(dx, shadowy+16, 28*scale, 10*scale);
+
+        canvas.setAlpha()
+              .drawBitmapRegion(this.bmpRabbit,
+                    sx, 0, 32, 32,
+                    dx - 16, dy - 16);
+    }
+
+
     public update(event : CoreEvent) : void {
 
         const ANIM_SPEED = 1.0 / 8.0;
@@ -148,8 +174,6 @@ export class Game {
 
     public redraw(canvas : Canvas) : void {
 
-        const ANIM_SRC = [0, 1, 0, 2];
-
         if (!this.loaded) {
 
             canvas.clear(0);
@@ -158,15 +182,8 @@ export class Game {
 
         canvas.clear(170);
 
-        let animFrame = (this.animTimer | 0);
-        let sx = ANIM_SRC[animFrame] * 32;
-
         this.drawBackground(canvas);
-
-        canvas.drawBitmapRegion(this.bmpRabbit,
-            sx, 0, 32, 32,
-            canvas.width/2 - 16, 
-            canvas.height/2 - 16);
+        this.drawRabbit(canvas);
     }
 
 }
