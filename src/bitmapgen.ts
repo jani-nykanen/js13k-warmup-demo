@@ -1,4 +1,4 @@
-import { Bitmap } from "./canvas.js";
+import { Bitmap, Canvas } from "./canvas.js";
 
 
 const TILE_WIDTH  = 8;
@@ -77,7 +77,7 @@ const convertChar = (data : ImageData, width : number,
 
 
 export const convert2BitImageToRGB222 = (bmp : Bitmap, 
-    lookup : RGB222LookupTable, palette : Array<number[]>) : Bitmap => {
+    lookup : RGB222LookupTable, palette : Array<number[]>) : Bitmap | null => {
 
     if (bmp == null) 
         return null;
@@ -110,7 +110,7 @@ export const convert2BitImageToRGB222 = (bmp : Bitmap,
 }
 
 
-export const loadBitmap = (path : string, callback : (bmp : Bitmap) => void) : void => {
+export const loadBitmap = (path : string, callback : (bmp : Bitmap) => void) : Bitmap => {
 
     let image = new Image();
     image.onload = () => {
@@ -118,5 +118,17 @@ export const loadBitmap = (path : string, callback : (bmp : Bitmap) => void) : v
         callback(image);
     }
     image.src = path;
+
+    return image;
 }
 
+
+export const generateFreeStyleBitmap = (width : number, height : number,
+    renderFunc : (canvas : Canvas) => void) : Bitmap => {
+
+    let canvas = new Canvas(width, height, false);
+
+    renderFunc(canvas);
+
+    return canvas.convertToBitmap();
+}

@@ -21,10 +21,15 @@ dist:
 all: js
 
 
-minify:
+minify: js_full
 	mkdir -p temp
 	java -jar closure/closure.jar --js js/*.js --js_output_file temp/out.js --compilation_level ADVANCED_OPTIMIZATIONS --language_out ECMASCRIPT_2021
 	cat misc/index_top.txt > temp/index.html
 	cat temp/out.js >> temp/index.html
 	cat misc/index_bottom.txt >> temp/index.html
+	cp b.png temp/b.png
 	rm temp/out.js
+
+pack: minify
+	(cd temp; zip -r ../dist.zip .)
+	advzip -z dist.zip

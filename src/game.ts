@@ -1,63 +1,148 @@
-import { DefaultBitmaps, generateDefaultBitmaps } from "./bitmaps.js";
-import { Canvas } from "./canvas.js";
+import { convert2BitImageToRGB222, generateFreeStyleBitmap, generateRGB222LookupTable, loadBitmap, RGB222LookupTable } from "./bitmapgen.js";
+import { Bitmap, Canvas } from "./canvas.js";
 import { CoreEvent } from "./core.js";
-import { KeyState } from "./keyboard.js";
-import { Vector2 } from "./vector.js";
+
+
+const RABBIT_BLOCK1 = [
+    0,
+    0b111000,
+    0b111110,
+    -1
+];
+const RABBIT_BLOCK2 = [
+    0,
+    0b111000,
+    0b100100,
+    -1
+];
+
+
+const RABBIT_PALETTE = [
+    // Line 1
+    RABBIT_BLOCK1, RABBIT_BLOCK1, RABBIT_BLOCK1, RABBIT_BLOCK1, 
+    RABBIT_BLOCK1, RABBIT_BLOCK1, RABBIT_BLOCK1, RABBIT_BLOCK1,
+    RABBIT_BLOCK1, RABBIT_BLOCK1, RABBIT_BLOCK1, RABBIT_BLOCK1,
+    // Line 2
+    RABBIT_BLOCK1, RABBIT_BLOCK1, RABBIT_BLOCK1, RABBIT_BLOCK1, 
+    RABBIT_BLOCK1, RABBIT_BLOCK1, RABBIT_BLOCK1, RABBIT_BLOCK1,
+    RABBIT_BLOCK1, RABBIT_BLOCK1, RABBIT_BLOCK1, RABBIT_BLOCK1,
+    // Line 3
+    RABBIT_BLOCK1, RABBIT_BLOCK1, RABBIT_BLOCK1, RABBIT_BLOCK1, 
+    RABBIT_BLOCK1, RABBIT_BLOCK1, RABBIT_BLOCK1, RABBIT_BLOCK1,
+    RABBIT_BLOCK1, RABBIT_BLOCK1, RABBIT_BLOCK1, RABBIT_BLOCK1,
+    // Line 4
+    RABBIT_BLOCK2, RABBIT_BLOCK2, RABBIT_BLOCK2, RABBIT_BLOCK2,
+    RABBIT_BLOCK2, RABBIT_BLOCK2, RABBIT_BLOCK2, RABBIT_BLOCK2,
+    RABBIT_BLOCK2, RABBIT_BLOCK2, RABBIT_BLOCK2, RABBIT_BLOCK2,
+];
 
 
 export class Game {
 
 
-    private testPos : Vector2;
     private animTimer : number = 0.0;
+    private backgroundTimer : number = 0.0;
 
-    private bitmaps : DefaultBitmaps;
+    private bmpRabbit : Bitmap | null = null;
+    private bmpBackground : Bitmap | null = null;
 
     private loaded = false;
 
 
     constructor(event : CoreEvent) {
 
-        this.testPos = new Vector2(80, 72);
+        this.generateBitmaps();
+    }
 
-        generateDefaultBitmaps((bitmaps : DefaultBitmaps) => {
 
-            this.bitmaps = bitmaps;
+    private generateRabbitBitmap(lookup : RGB222LookupTable) : void {
+
+        const RABBIT_PATH = "b.png";
+
+        loadBitmap(RABBIT_PATH, (bmp : Bitmap) => {
+
+            this.bmpRabbit = convert2BitImageToRGB222(bmp, lookup, RABBIT_PALETTE);
             this.loaded = true;
         });
     }
 
 
+    private generateBackgroundBitmap() : void {
+
+        const COLOR_TABLES = [
+            [ [85, 85, 170], [170, 170, 255], [255, 255, 255] ],
+            [ [85, 0, 85], [170, 85, 170], [255, 170, 255] ]
+        ];
+
+        const WIDTH = 160;
+        const HEIGHT = 176;
+        const TILE_WIDTH = 16;
+        const TILE_HEIGHT = 16;
+
+        this.bmpBackground = generateFreeStyleBitmap(WIDTH, HEIGHT,
+            (canvas : Canvas) => {
+
+                let colorIndex : number;
+                let dx : number;
+                let dy : number;
+
+                for (let y = 0; y < HEIGHT / TILE_HEIGHT; ++ y) {
+
+                    for (let x = 0; x < WIDTH / TILE_WIDTH; ++ x) {
+
+                        colorIndex = Number(x % 2 == y % 2);
+                        dx = x*TILE_WIDTH;
+                        dy = y*TILE_HEIGHT;
+
+                        canvas.setFillColor(...COLOR_TABLES[colorIndex][0])
+                              .fillRect(dx, dy, TILE_WIDTH, TILE_HEIGHT)
+                              .setFillColor(...COLOR_TABLES[colorIndex][2])
+                              .fillRect(dx, dy, TILE_WIDTH-1, TILE_HEIGHT-1)
+                              .setFillColor(...COLOR_TABLES[colorIndex][1])
+                              .fillRect(dx+1, dy+1, TILE_WIDTH-2, TILE_HEIGHT-2);
+                    }
+                }
+        });
+    }
+
+
+    private generateBitmaps() : void {
+
+        let lookup = generateRGB222LookupTable();
+        this.generateRabbitBitmap(lookup);
+        
+        this.generateBackgroundBitmap();
+    }
+
+
+    private drawBackground(canvas : Canvas) : void {
+
+        let bmp = this.bmpBackground as Bitmap;
+
+        let offy = Math.abs(canvas.height - bmp.height) / 2;
+
+        let amplitude = offy;
+        let perioud = Math.PI*2 / bmp.width;
+
+        let dy : number;
+
+        for (let dx = 0; dx < canvas.width; ++ dx) {
+
+            dy = Math.round(Math.sin(this.backgroundTimer + perioud*dx) * amplitude);
+            canvas.drawBitmapRegion(bmp, dx, dy + offy, 1, canvas.height, dx, 0);
+        }
+    }
+
+
     public update(event : CoreEvent) : void {
 
-        const SPEED = 2.0;
         const ANIM_SPEED = 1.0 / 8.0;
+        const BG_SPEED = 0.05;
 
         if (!this.loaded) return;
 
-        let dir = new Vector2();
-
-        if (event.keyboard.getActionState("right") & KeyState.DownOrPressed)
-            dir.x = 1;
-        else if (event.keyboard.getActionState("left") & KeyState.DownOrPressed)
-            dir.x = -1;
-
-        if (event.keyboard.getActionState("up") & KeyState.DownOrPressed)
-            dir.y = -1;
-        else if (event.keyboard.getActionState("down") & KeyState.DownOrPressed)
-            dir.y = 1;
-
-        let len = Math.hypot(dir.x, dir.y);
-        if (len > 0.0001) {
-
-            dir.x /= len;
-            dir.y /= len;
-        }
-
-        this.testPos.x += dir.x * SPEED * event.step;
-        this.testPos.y += dir.y * SPEED * event.step;
-
         this.animTimer = (this.animTimer + ANIM_SPEED*event.step) % 4.0;
+        this.backgroundTimer = (this.backgroundTimer + BG_SPEED*event.step) % (Math.PI*2);
     }
 
 
@@ -76,10 +161,12 @@ export class Game {
         let animFrame = (this.animTimer | 0);
         let sx = ANIM_SRC[animFrame] * 32;
 
-        canvas.drawBitmapRegion(this.bitmaps.rabbit,
+        this.drawBackground(canvas);
+
+        canvas.drawBitmapRegion(this.bmpRabbit,
             sx, 0, 32, 32,
-            Math.round(this.testPos.x)-16, 
-            Math.round(this.testPos.y)-16);
+            canvas.width/2 - 16, 
+            canvas.height/2 - 16);
     }
 
 }

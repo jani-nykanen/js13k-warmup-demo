@@ -1,7 +1,7 @@
 import { clamp } from "./math.js";
 
 
-export type Bitmap = HTMLImageElement | HTMLCanvasElement | null;
+export type Bitmap = HTMLImageElement | HTMLCanvasElement;
 
 
 export const enum Flip {
@@ -13,10 +13,15 @@ export const enum Flip {
 };
 
 
-const createCanvas = (width : number, height : number) : [HTMLCanvasElement, CanvasRenderingContext2D] => {
+const createCanvasElement = (width : number, height : number, embedToDiv = true) : [HTMLCanvasElement, CanvasRenderingContext2D] => {
 
-    let div = document.createElement("div");
-    div.setAttribute("style", "position: absolute; top: 0; left: 0; z-index: -1;");
+    let div : HTMLDivElement | null = null;
+    
+    if (embedToDiv) {
+
+        div = document.createElement("div");
+        div.setAttribute("style", "position: absolute; top: 0; left: 0; z-index: -1;");
+    }
 
     let canvas = document.createElement("canvas");
     canvas.setAttribute(
@@ -29,8 +34,11 @@ const createCanvas = (width : number, height : number) : [HTMLCanvasElement, Can
     canvas.width = width;
     canvas.height = height;
 
-    div.appendChild(canvas);
-    document.body.appendChild(div);
+    if (div != null) {
+
+        div.appendChild(canvas);
+        document.body.appendChild(div);
+    }
 
     let ctx = canvas.getContext("2d") as CanvasRenderingContext2D;
     ctx.imageSmoothingEnabled = false;
@@ -65,12 +73,15 @@ export class Canvas {
     }
 
 
-    constructor(width : number, height : number) {
+    constructor(width : number, height : number, isMainCanvas = true) {
 
-        [this.canvas, this.ctx] = createCanvas(width, height);
+        [this.canvas, this.ctx] = createCanvasElement(width, height, isMainCanvas);
 
-        window.addEventListener("resize", () => this.resizeEvent(window.innerWidth, window.innerHeight));
-        this.resizeEvent(window.innerWidth, window.innerHeight);
+        if (isMainCanvas) {
+
+            window.addEventListener("resize", () => this.resizeEvent(window.innerWidth, window.innerHeight));
+            this.resizeEvent(window.innerWidth, window.innerHeight);
+        }
     }   
 
 
@@ -109,7 +120,7 @@ export class Canvas {
     public clear = (r = 255, g = r, b = g) : Canvas => this.setFillColor(r, g, b).fillRect();
 
 
-    public drawBitmapRegion(bmp : Bitmap, 
+    public drawBitmapRegion(bmp : Bitmap | null, 
         sx : number, sy : number, sw : number, sh : number, 
         dx : number, dy : number, flip = Flip.None) : Canvas {
 
@@ -159,7 +170,7 @@ export class Canvas {
     }
 
 
-    public drawBitmap(bmp : Bitmap, dx : number, dy : number, flip = Flip.None) : Canvas {
+    public drawBitmap(bmp : Bitmap | null, dx : number, dy : number, flip = Flip.None) : Canvas {
 
         if (bmp == null)
             return this;
@@ -167,4 +178,7 @@ export class Canvas {
         return this.drawBitmapRegion(bmp, 0, 0, bmp.width, bmp.height, dx, dy, flip);
     }
 
+
+    // Looks silly, but it is here for abstraction
+    public convertToBitmap = () : Bitmap => this.canvas;
 }
