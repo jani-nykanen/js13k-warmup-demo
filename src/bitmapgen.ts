@@ -1,4 +1,4 @@
-import { Bitmap } from "./canvas";
+import { Bitmap } from "./canvas.js";
 
 
 const TILE_WIDTH  = 8;
@@ -19,8 +19,8 @@ export const generateRGB222LookupTable = () : RGB222LookupTable => {
     for (let c = 0; c < 64; ++ c) {
 
         r = c >> 4;
-        g = (c % 0b1111) >> 2;
-        b = (c % 0b11);
+        g = (c & 0b1100) >> 2;
+        b = (c & 0b11);
 
         out[c*3]     = r * 85;
         out[c*3 + 1] = g * 85;
@@ -30,14 +30,11 @@ export const generateRGB222LookupTable = () : RGB222LookupTable => {
 }
 
 
-const getColorIndex = (pixels : Uint8Array, start : number) : number => {
+const getColorIndex = (pixels : Uint8ClampedArray, start : number) : number => {
 
     const INDICES = [0, 1, 2, 3];
 
-    if (pixels[start + 3] < 255)
-        return -1;
-
-    let r = (pixels[start] / 85)     | 0;
+    let r = (pixels[start]     / 85) | 0;
     let g = (pixels[start + 1] / 85) | 0;
     let b = (pixels[start + 2] / 85) | 0;
 
@@ -47,7 +44,7 @@ const getColorIndex = (pixels : Uint8Array, start : number) : number => {
 }
 
 
-const convertChar = (data : ImageData, pixels : Uint8Array, width : number,
+const convertChar = (data : ImageData, width : number,
     startx : number, starty : number, endx : number, endy : number,
     lookup : RGB222LookupTable, palette : Array<number>) : void => {
 
@@ -60,14 +57,14 @@ const convertChar = (data : ImageData, pixels : Uint8Array, width : number,
         for (let x = startx; x < endx; ++ x) {
 
             k = y * width + x;
-            index = getColorIndex(pixels, k*4);
-            if (index < 0) {
+            index = getColorIndex(data.data, k*4);
+            p = palette[index];
+
+            if (p < 0) {
 
                 data.data[k*4 + 3] = 0;
             }
             else {
-
-                p = palette[index];
 
                 data.data[k*4]     = lookup[p*3];
                 data.data[k*4 + 1] = lookup[p*3 + 1];
@@ -93,7 +90,6 @@ export const convert2BitImageToRGB222 = (bmp : Bitmap,
     ctx.drawImage(bmp, 0, 0);
 
     let data = ctx.getImageData(0, 0, bmp.width, bmp.height);
-    let pixels = Uint8Array.from(data.data);
 
     let w = (bmp.width / TILE_WIDTH)   | 0;
     let h = (bmp.height / TILE_HEIGHT) | 0;
@@ -102,7 +98,7 @@ export const convert2BitImageToRGB222 = (bmp : Bitmap,
 
         for (let i = 0; i < w; ++ i) {
 
-            convertChar(data, pixels, bmp.width,
+            convertChar(data, bmp.width,
                 i*TILE_WIDTH, j*TILE_HEIGHT, 
                 (i+1)*TILE_WIDTH, (j+1)*TILE_HEIGHT,
                 lookup, palette[j*w + i]);

@@ -1,6 +1,18 @@
 import { clamp } from "./math.js";
 
 
+export type Bitmap = HTMLImageElement | HTMLCanvasElement | null;
+
+
+export const enum Flip {
+
+    None = 0,
+    Horizontal = 1,
+    Vertical = 2,
+    Both = 3
+};
+
+
 const createCanvas = (width : number, height : number) : [HTMLCanvasElement, CanvasRenderingContext2D] => {
 
     let div = document.createElement("div");
@@ -34,9 +46,6 @@ const getColorString = (r : number, g : number, b : number, a = 1.0) : string =>
         String(b | 0) + "," + 
         String(clamp(a, 0.0, 1.0)) + 
     ")";
-
-
-export type Bitmap = HTMLImageElement | HTMLCanvasElement | null;
 
 
 export class Canvas {
@@ -98,5 +107,64 @@ export class Canvas {
 
 
     public clear = (r = 255, g = r, b = g) : Canvas => this.setFillColor(r, g, b).fillRect();
+
+
+    public drawBitmapRegion(bmp : Bitmap, 
+        sx : number, sy : number, sw : number, sh : number, 
+        dx : number, dy : number, flip = Flip.None) : Canvas {
+
+        if (bmp == null || sw <= 0 || sh <= 0) 
+            return this;
+
+        let c = this.ctx;
+
+        // dx += this.translation.x;
+        // dy += this.translation.y;
+
+        sx |= 0;
+        sy |= 0;
+        sw |= 0;
+        sh |= 0;
+
+        dx |= 0;
+        dy |= 0;
+
+        flip = flip | Flip.None;
+        
+        if (flip != Flip.None) {
+            c.save();
+        }
+
+        if ((flip & Flip.Horizontal) != 0) {
+
+            c.translate(sw, 0);
+            c.scale(-1, 1);
+            dx *= -1;
+        }
+        if ((flip & Flip.Vertical) != 0) {
+
+            c.translate(0, sh);
+            c.scale(1, -1);
+            dy *= -1;
+        }
+
+        c.drawImage(bmp, sx, sy, sw, sh, dx, dy, sw, sh);
+
+        if (flip != Flip.None) {
+
+            c.restore();
+        }
+
+        return this;
+    }
+
+
+    public drawBitmap(bmp : Bitmap, dx : number, dy : number, flip = Flip.None) : Canvas {
+
+        if (bmp == null)
+            return this;
+
+        return this.drawBitmapRegion(bmp, 0, 0, bmp.width, bmp.height, dx, dy, flip);
+    }
 
 }

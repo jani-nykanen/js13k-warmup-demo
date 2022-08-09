@@ -1,3 +1,4 @@
+import { DefaultBitmaps, generateDefaultBitmaps } from "./bitmaps.js";
 import { Canvas } from "./canvas.js";
 import { CoreEvent } from "./core.js";
 import { KeyState } from "./keyboard.js";
@@ -8,17 +9,28 @@ export class Game {
 
 
     private testPos : Vector2;
+    private bitmaps : DefaultBitmaps;
+
+    private loaded = false;
 
 
     constructor(event : CoreEvent) {
 
         this.testPos = new Vector2(80, 72);
+
+        generateDefaultBitmaps((bitmaps : DefaultBitmaps) => {
+
+            this.bitmaps = bitmaps;
+            this.loaded = true;
+        });
     }
 
 
     public update(event : CoreEvent) : void {
 
         const SPEED = 2.0;
+
+        if (!this.loaded) return;
 
         let dir = new Vector2();
 
@@ -46,9 +58,16 @@ export class Game {
 
     public redraw(canvas : Canvas) : void {
 
+        if (!this.loaded) {
+
+            canvas.clear(0);
+            return;
+        }
+
         canvas.clear(170)
-              .setFillColor(255, 0, 0)
-              .fillRect(this.testPos.x-8, this.testPos.y-8, 16, 16);
+              .drawBitmap(this.bitmaps.rabbit, 
+                Math.round(this.testPos.x)-16, 
+                Math.round(this.testPos.y)-16);
     }
 
 }
