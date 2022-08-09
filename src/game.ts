@@ -9,6 +9,8 @@ export class Game {
 
 
     private testPos : Vector2;
+    private animTimer : number = 0.0;
+
     private bitmaps : DefaultBitmaps;
 
     private loaded = false;
@@ -29,6 +31,7 @@ export class Game {
     public update(event : CoreEvent) : void {
 
         const SPEED = 2.0;
+        const ANIM_SPEED = 1.0 / 8.0;
 
         if (!this.loaded) return;
 
@@ -53,10 +56,14 @@ export class Game {
 
         this.testPos.x += dir.x * SPEED * event.step;
         this.testPos.y += dir.y * SPEED * event.step;
+
+        this.animTimer = (this.animTimer + ANIM_SPEED*event.step) % 4.0;
     }
 
 
     public redraw(canvas : Canvas) : void {
+
+        const ANIM_SRC = [0, 1, 0, 2];
 
         if (!this.loaded) {
 
@@ -64,10 +71,15 @@ export class Game {
             return;
         }
 
-        canvas.clear(170)
-              .drawBitmap(this.bitmaps.rabbit, 
-                Math.round(this.testPos.x)-16, 
-                Math.round(this.testPos.y)-16);
+        canvas.clear(170);
+
+        let animFrame = (this.animTimer | 0);
+        let sx = ANIM_SRC[animFrame] * 32;
+
+        canvas.drawBitmapRegion(this.bitmaps.rabbit,
+            sx, 0, 32, 32,
+            Math.round(this.testPos.x)-16, 
+            Math.round(this.testPos.y)-16);
     }
 
 }
