@@ -1,7 +1,9 @@
+import { AudioPlayer } from "./audioplayer.js";
 import { convert2BitImageToRGB222, generateFont, generateFreeStyleBitmap, generateRGB222LookupTable, loadBitmap, RGB222LookupTable } from "./bitmapgen.js";
 import { Bitmap, Canvas, TextAlign } from "./canvas.js";
 import { CoreEvent } from "./core.js";
 import { KeyState } from "./keyboard.js";
+import { Sample } from "./sample.js";
 
 
 const RABBIT_BLOCK1 = [
@@ -41,34 +43,6 @@ const RABBIT_PALETTE = [
 const HINT_TEXT = "Press SPACE to play sounds.  ";
 
 
-type SampleInfo = {sequence : number[][], volume : number, type : OscillatorType};
-const TEST_SAMPLES = [
-    {
-        sequence: [[128, 4], [144, 6], [160, 12]],
-        volume: 0.6,
-        type: <OscillatorType> "square"
-    },
-
-    {
-        sequence: [[224, 4], [160, 6], [128, 12]],
-        volume: 0.7,
-        type: <OscillatorType> "sine"
-    },
-
-    {
-        sequence: [[172, 10], [144, 16]],
-        volume: 0.7,
-        type: <OscillatorType> "sawtooth"
-    },
-
-    {
-        sequence: [[128, 4], [144, 4], [128, 4], [100, 4], [128, 10]],
-        volume: 0.6,
-        type: <OscillatorType> "triangle"
-    },
-]
-
-
 export class Game {
 
 
@@ -78,6 +52,7 @@ export class Game {
     private hintWidth : number;
 
     private soundIndex : number = 0;
+    private samples : Array<Sample>;
 
     private bmpRabbit : Bitmap | null = null;
     private bmpBackground : Bitmap | null = null;
@@ -88,6 +63,16 @@ export class Game {
 
 
     constructor(event : CoreEvent) {
+
+        let audio = event.audio;
+
+        this.samples = new Array<Sample> ();
+        this.samples.push(
+            audio.createSample([[128, 4], [144, 6], [160, 12]], "square"),
+            audio.createSample([[192, 6], [240, 6], [192, 6], [160, 12]], "triangle"),
+            audio.createSample([[224, 4], [192, 6], [176, 12]], "sawtooth"),
+            audio.createSample([[240, 12], [200, 12]], "sine")
+        )
 
         this.generateBitmaps();
 
@@ -207,9 +192,11 @@ export class Game {
     private drawTextContent(canvas : Canvas) : void {
 
         const BOTTOM_TEXT = "Have fun!";
-        const BOTTOM_TEXT_XOFF = -16;
+        const BOTTOM_TEXT_XOFF = -18;
 
-        let cw = 32 + BOTTOM_TEXT_XOFF;
+        let xoff = BOTTOM_TEXT_XOFF + (Math.sin(this.backgroundTimer*2)+1)*12 / BOTTOM_TEXT.length;
+
+        let cw = 32 + xoff;
         let dx = canvas.width/2 - BOTTOM_TEXT.length * cw / 2;
         let dy = 0;
         let period = Math.PI*2.0 / BOTTOM_TEXT.length;
@@ -227,9 +214,9 @@ export class Game {
                 dy = Math.round(Math.sin(this.backgroundTimer + period*k) * 8);
 
                 canvas.drawText(this.bmpFontBig, BOTTOM_TEXT.charAt(j), 
-                    dx + (j + 0.5)*cw + i, 
+                    Math.round(dx + j*cw) + i, 
                     canvas.height-36 + i + dy, 
-                    BOTTOM_TEXT_XOFF, 0, TextAlign.Center);
+                    xoff, 0, TextAlign.Center);
             }
         }
 
@@ -250,6 +237,7 @@ export class Game {
         const ANIM_SPEED = 1.0 / 8.0;
         const BG_SPEED = 0.05;
         const HINT_SPEED = 1.0;
+        const SAMPLE_VOL = [0.30, 0.60, 0.40, 0.70];
 
         if (!this.loaded) return;
 
@@ -257,12 +245,10 @@ export class Game {
         this.backgroundTimer = (this.backgroundTimer + BG_SPEED*event.step) % (Math.PI*2);
         this.hintPos = (this.hintPos + HINT_SPEED*event.step) % this.hintWidth;
 
-        let sample : SampleInfo;
         if (event.keyboard.getActionState("select") == KeyState.Pressed) {
 
-            sample = TEST_SAMPLES[(this.soundIndex ++) % 4];
-
-            event.audio.playSequence(sample.sequence, sample.volume, sample.type);
+            event.audio.playSample(this.samples[this.soundIndex], SAMPLE_VOL[this.soundIndex]);
+            this.soundIndex = (this.soundIndex + 1) % 4;
         }
     }
 

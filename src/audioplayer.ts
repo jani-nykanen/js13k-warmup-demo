@@ -1,5 +1,5 @@
 import { CoreEvent } from "./core.js";
-import { clamp } from "./math.js";
+import { Sample } from "./sample.js";
 
 
 // TODO: This is from last year's project.  Might
@@ -11,23 +11,19 @@ export class AudioPlayer {
 
 
     private ctx : AudioContext;
-    private oscillator : OscillatorNode | null = null;
     private gain : GainNode;
 
-    private timer : number = 0.0;
-    private soundSeq : number[][] | null = null;
-    private seqVolume : number = 1.0;
-    private seqType : OscillatorType = "square";
-    private globalVolume : number;
+    private samplePipe : Array<Sample>;
 
+    private globalVolume : number;
     private enabled : boolean;
 
 
     constructor(globalVolume = 1.0) {
 
         this.ctx = new AudioContext();
-        this.oscillator = null;
         this.gain = new GainNode(this.ctx);
+        this.samplePipe = new Array<Sample> ();
 
         this.enabled = true;
 
@@ -37,69 +33,26 @@ export class AudioPlayer {
 
     public update(event : CoreEvent) : void {
 
-        if (this.timer <= 0)
-            return; 
+        let s : Sample;
+        for (let i = 0; i < this.samplePipe.length; ++ i) {
 
-        if ((this.timer -= event.step) <= 0) {
+            s = this.samplePipe[i];
+            s.update(event);
+            if (!s.isPlaying()) {
 
-            this.stop();
-            if (this.soundSeq != null && this.soundSeq.length > 0) {
-
-                this.play(
-                    this.soundSeq[0][0], 
-                    this.seqVolume, 
-                    this.soundSeq[0][1], 
-                    this.seqType);
-
-                this.soundSeq.shift();
+                this.samplePipe.splice(i, 1);
             }
         }
-        
     }
 
 
-    public stop() : void {
-
-        if (this.oscillator == null) return;
-
-        this.oscillator.disconnect();
-        this.oscillator.stop(0);
-        this.oscillator = null;
-    }
+    public createSample = (sequence : number[][], type : OscillatorType = "square") : Sample => (new Sample(this.ctx, this.gain, sequence, type));
 
 
-    public play(freq : number, vol : number, length : number, type = <OscillatorType> "square") : void {
+    public playSample(s : Sample, volume = 1.0) : void {
 
-        if (!this.enabled) return;
-
-        if (this.timer > 0)
-            this.stop();
-
-        this.oscillator = this.ctx.createOscillator();
-        this.oscillator.type = type;
-
-        this.timer = length;
-
-        vol *= this.globalVolume;
-        this.gain.gain.setValueAtTime(clamp(vol, 0.01, 1.0), 0.0);
-        this.gain.gain.exponentialRampToValueAtTime(vol/2, 1.0/60.0 * length);
-
-        this.oscillator.connect(this.gain).connect(this.ctx.destination);
-        this.oscillator.frequency.setValueAtTime(freq, 0);
-        this.oscillator.start(0);
-    }
-
-
-    public playSequence(sequence : number[][], vol : number, 
-        type = <OscillatorType>"square") : void {
-
-        this.stop();
-
-        this.soundSeq = sequence.map(s => Array.from(s));
-        this.seqVolume = vol;
-
-        this.play(this.soundSeq[0][0], this.seqVolume, this.soundSeq[0][1], type);
-        this.soundSeq.shift();
+        this.samplePipe.push(s);
+        s.play(volume * this.globalVolume);
     }
 
 
