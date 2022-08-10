@@ -1,4 +1,5 @@
-import { Bitmap, Canvas } from "./canvas.js";
+import { Bitmap, Canvas, getColorString } from "./canvas.js";
+import { clamp } from "./math.js";
 
 
 const TILE_WIDTH  = 8;
@@ -76,6 +77,33 @@ const convertChar = (data : ImageData, width : number,
 }
 
 
+const convertToRGB222 = (src : HTMLCanvasElement, alphaLimit = 64, mono = false) : void => {
+
+    let ctx = src.getContext("2d") as CanvasRenderingContext2D;
+
+    let data = ctx.getImageData(0, 0, src.width, src.height);
+    let pix = Uint8Array.from(data.data);
+
+    for (let i = 0; i < src.width * src.height * 4; i += 4) {
+
+        for (let j = 0; j < 3; ++ j) {
+
+            if (mono) {
+
+                data.data[i + j] = Math.floor(pix[i + j] / 255) * 255;
+            }
+            else {
+                
+                data.data[i + j] = clamp(Math.round(pix[i + j] / 85) * 85, 0, 255);
+            }
+        }
+        data.data[i + 3] = pix[i + 3] < alphaLimit ? 0 : 255;
+    }
+
+    ctx.putImageData(data, 0, 0);
+}
+
+
 export const convert2BitImageToRGB222 = (bmp : Bitmap, 
     lookup : RGB222LookupTable, palette : Array<number[]>) : Bitmap | null => {
 
@@ -131,4 +159,50 @@ export const generateFreeStyleBitmap = (width : number, height : number,
     renderFunc(canvas);
 
     return canvas.convertToBitmap();
+}
+
+
+export const generateFont = (font : string, charWidth : number, charHeight : number, 
+    mono = false, alphaLimit = 64, primaryColor : [number, number, number] = [255, 255, 255],
+    depthEffectHeight = 0, secondaryColor : [number, number, number] = [0, 0, 0]) : Bitmap => {
+
+    let width = charWidth * 16;
+    let height = charHeight * 16;
+
+    let canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+
+    let ctx = canvas.getContext("2d") as CanvasRenderingContext2D;
+    ctx.imageSmoothingEnabled = false;
+    ctx.font = font;
+    ctx.textAlign = "center";
+
+    let i : number;
+    for (let z = depthEffectHeight; z >= 0; -- z) {
+
+        if (z == 0) {
+
+            ctx.fillStyle = getColorString(...primaryColor, 1.0);
+        }
+        else {
+
+            ctx.fillStyle = getColorString(...secondaryColor, 1.0);
+        }
+
+        i = 0;
+        for (let y = 0; y < 16; ++ y) {
+
+            for (let x = 0; x < 16; ++ x) {
+
+                ctx.fillText(String.fromCharCode(i ++),
+                    (x + 0.5) * charWidth + z, 
+                    (y + 0.67) * charHeight + z);
+            }
+        }
+    }
+
+    convertToRGB222(canvas, alphaLimit, mono);
+
+    return canvas;
 }

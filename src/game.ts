@@ -1,5 +1,5 @@
-import { convert2BitImageToRGB222, generateFreeStyleBitmap, generateRGB222LookupTable, loadBitmap, RGB222LookupTable } from "./bitmapgen.js";
-import { Bitmap, Canvas } from "./canvas.js";
+import { convert2BitImageToRGB222, generateFont, generateFreeStyleBitmap, generateRGB222LookupTable, loadBitmap, RGB222LookupTable } from "./bitmapgen.js";
+import { Bitmap, Canvas, TextAlign } from "./canvas.js";
 import { CoreEvent } from "./core.js";
 
 
@@ -37,14 +37,21 @@ const RABBIT_PALETTE = [
 ];
 
 
+const HINT_TEXT = "Press SPACE to play sounds.  ";
+
+
 export class Game {
 
 
     private animTimer : number = 0.0;
     private backgroundTimer : number = 0.0;
+    private hintPos : number = 0.0;
+    private hintWidth : number;
 
     private bmpRabbit : Bitmap | null = null;
     private bmpBackground : Bitmap | null = null;
+    private bmpFontSmall : Bitmap | null = null;
+    private bmpFontBig : Bitmap | null = null;
 
     private loaded = false;
 
@@ -52,6 +59,8 @@ export class Game {
     constructor(event : CoreEvent) {
 
         this.generateBitmaps();
+
+        this.hintWidth = HINT_TEXT.length * 8;
     }
 
 
@@ -109,9 +118,12 @@ export class Game {
     private generateBitmaps() : void {
 
         let lookup = generateRGB222LookupTable();
+
         this.generateRabbitBitmap(lookup);
-        
         this.generateBackgroundBitmap();
+
+        this.bmpFontBig = generateFont("bold 24px Arial", 32, 32, false, 127, [170, 255, 255], 2, [0, 85, 85]);
+        this.bmpFontSmall = generateFont("12px Arial", 24, 24, true, 127);
     }
 
 
@@ -164,11 +176,13 @@ export class Game {
 
         const ANIM_SPEED = 1.0 / 8.0;
         const BG_SPEED = 0.05;
+        const HINT_SPEED = 1.0;
 
         if (!this.loaded) return;
 
         this.animTimer = (this.animTimer + ANIM_SPEED*event.step) % 4.0;
         this.backgroundTimer = (this.backgroundTimer + BG_SPEED*event.step) % (Math.PI*2);
+        this.hintPos = (this.hintPos + HINT_SPEED*event.step) % this.hintWidth;
     }
 
 
@@ -184,6 +198,20 @@ export class Game {
 
         this.drawBackground(canvas);
         this.drawRabbit(canvas);
+
+        canvas.drawText(this.bmpFontBig, "Have fun!", 
+            canvas.width/2, canvas.height-32, -16, 0, TextAlign.Center);
+
+        canvas.setFillColor(0, 0, 0, 0.33)
+              .fillRect(0, 0, canvas.width, 14);
+
+        for (let i = 0; i < 2; ++ i) {
+
+            canvas.drawText(this.bmpFontSmall, HINT_TEXT, 
+                canvas.width/2 - this.hintPos + this.hintWidth*i, 
+                -6, 
+                -16, 0, TextAlign.Center);
+        }
     }
 
 }

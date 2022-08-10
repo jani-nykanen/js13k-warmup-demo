@@ -13,6 +13,14 @@ export const enum Flip {
 };
 
 
+export const enum TextAlign {
+
+    Left = 0,
+    Center = 1,
+    Right = 2
+};
+
+
 const createCanvasElement = (width : number, height : number, embedToDiv = true) : [HTMLCanvasElement, CanvasRenderingContext2D] => {
 
     let div : HTMLDivElement | null = null;
@@ -47,7 +55,7 @@ const createCanvasElement = (width : number, height : number, embedToDiv = true)
 }
 
 
-const getColorString = (r : number, g : number, b : number, a = 1.0) : string =>
+export const getColorString = (r : number, g : number, b : number, a = 1.0) : string =>
     "rgba(" + 
         String(r | 0) + "," + 
         String(g | 0) + "," + 
@@ -103,9 +111,9 @@ export class Canvas {
     }
 
 
-    public setFillColor(r = 255, g = r, b = g) : Canvas {
+    public setFillColor(r = 255, g = r, b = g, a = 1.0) : Canvas {
 
-        this.ctx.fillStyle = getColorString(r, g, b);
+        this.ctx.fillStyle = getColorString(r, g, b, a);
         return this;
     }
 
@@ -183,6 +191,55 @@ export class Canvas {
             return this;
 
         return this.drawBitmapRegion(bmp, 0, 0, bmp.width, bmp.height, dx, dy, flip);
+    }
+
+
+    public drawText(font : Bitmap | null, str : string, 
+        dx : number, dy : number, 
+        xoff = 0.0, yoff = 0.0, align = TextAlign.Left) : Canvas {
+
+        if (font == null)
+            return this;
+
+        let cw = (font.width / 16) | 0;
+        let ch = cw;
+
+        let x = dx;
+        let y = dy;
+        let chr : number;
+
+        if (align == TextAlign.Center) {
+
+            dx -= ((str.length+1) * (cw + xoff)) / 2.0 ;
+            x = dx;
+        }
+        else if (align == TextAlign.Right) {
+            
+            dx -= ((str.length) * (cw + xoff));
+            x = dx;
+        }
+
+        for (let i = 0; i < str.length; ++ i) {
+
+            chr = str.charCodeAt(i);
+            if (chr == '\n'.charCodeAt(0)) {
+
+                x = dx;
+                y += (ch + yoff);
+                continue;
+            }
+
+            this.drawBitmapRegion(
+                font, 
+                (chr % 16) * cw, 
+                ((chr/16)|0) * ch, 
+                cw, ch, 
+                x, y);
+
+            x += cw + xoff;
+        }
+
+        return this;
     }
 
 
