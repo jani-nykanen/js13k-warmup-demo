@@ -122,8 +122,8 @@ export class Game {
         this.generateRabbitBitmap(lookup);
         this.generateBackgroundBitmap();
 
-        this.bmpFontBig = generateFont("bold 24px Arial", 32, 32, false, 127, [170, 255, 255], 2, [0, 85, 85]);
-        this.bmpFontSmall = generateFont("12px Arial", 24, 24, true, 127);
+        this.bmpFontBig = generateFont("bold 24px Arial", 32, 32, 2, 8, 127, [255, 170, 0], true);
+        this.bmpFontSmall = generateFont("12px Arial", 24, 24, 2, 8, 127);
     }
 
 
@@ -151,14 +151,15 @@ export class Game {
         const ANIM_SRC = [0, 1, 0, 2];
         const AMPLITUDE = 16;
         const SCALE_FACTOR = 64;
+        const OFFSET = -8;
 
         let animFrame = (this.animTimer | 0);
         let sx = ANIM_SRC[animFrame] * 32;
 
         let dx = canvas.width/2;
-        let dy = canvas.height/2 + Math.round(Math.sin(this.backgroundTimer)*AMPLITUDE);
+        let dy = canvas.height/2 + Math.round(Math.sin(this.backgroundTimer)*AMPLITUDE) + OFFSET;
 
-        let shadowy = canvas.height/2 + AMPLITUDE;
+        let shadowy = canvas.height/2 + AMPLITUDE + OFFSET;
         let scale = 1.0 - Math.abs(dy - shadowy) / SCALE_FACTOR;
 
         canvas.setAlpha(0.33)
@@ -169,6 +170,47 @@ export class Game {
               .drawBitmapRegion(this.bmpRabbit,
                     sx, 0, 32, 32,
                     dx - 16, dy - 16);
+    }
+
+
+    private drawTextContent(canvas : Canvas) : void {
+
+        const BOTTOM_TEXT = "Have fun!";
+        const BOTTOM_TEXT_XOFF = -16;
+
+        let cw = 32 + BOTTOM_TEXT_XOFF;
+        let dx = canvas.width/2 - BOTTOM_TEXT.length * cw / 2;
+        let dy = 0;
+        let period = Math.PI*2.0 / BOTTOM_TEXT.length;
+
+        let k : number;
+        for (let i = 1; i >= 0; -- i) {
+
+            k = 0;
+            for (let j = 0; j < BOTTOM_TEXT.length; ++ j) {
+
+                if (BOTTOM_TEXT.charAt(j) == ' ')
+                    continue;
+
+                ++ k;
+                dy = Math.round(Math.sin(this.backgroundTimer + period*k) * 8);
+
+                canvas.drawText(this.bmpFontBig, BOTTOM_TEXT.charAt(j), 
+                    dx + (j + 0.5)*cw + i, 
+                    canvas.height-36 + i + dy, 
+                    BOTTOM_TEXT_XOFF, 0, TextAlign.Center);
+            }
+        }
+
+        canvas.setFillColor(0, 0, 0, 0.33)
+              .fillRect(0, 0, canvas.width, 14);
+
+        for (let i = 0; i < 2; ++ i) {
+
+            canvas.drawText(this.bmpFontSmall, HINT_TEXT, 
+                canvas.width/2 - this.hintPos + this.hintWidth*i, -6, 
+                -16, 0, TextAlign.Center);
+        }
     }
 
 
@@ -198,20 +240,7 @@ export class Game {
 
         this.drawBackground(canvas);
         this.drawRabbit(canvas);
-
-        canvas.drawText(this.bmpFontBig, "Have fun!", 
-            canvas.width/2, canvas.height-32, -16, 0, TextAlign.Center);
-
-        canvas.setFillColor(0, 0, 0, 0.33)
-              .fillRect(0, 0, canvas.width, 14);
-
-        for (let i = 0; i < 2; ++ i) {
-
-            canvas.drawText(this.bmpFontSmall, HINT_TEXT, 
-                canvas.width/2 - this.hintPos + this.hintWidth*i, 
-                -6, 
-                -16, 0, TextAlign.Center);
-        }
+        this.drawTextContent(canvas);
     }
 
 }

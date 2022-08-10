@@ -77,29 +77,55 @@ const convertChar = (data : ImageData, width : number,
 }
 
 
-const convertToRGB222 = (src : HTMLCanvasElement, alphaLimit = 64, mono = false) : void => {
+const convertToMono = (src : HTMLCanvasElement, color : [number, number, number], alphaLimit = 64) : void => {
 
     let ctx = src.getContext("2d") as CanvasRenderingContext2D;
-
     let data = ctx.getImageData(0, 0, src.width, src.height);
-    let pix = Uint8Array.from(data.data);
 
-    for (let i = 0; i < src.width * src.height * 4; i += 4) {
+    for (let i = 0; i < src.width*src.height; ++ i) {
 
         for (let j = 0; j < 3; ++ j) {
 
-            if (mono) {
+            data.data[i*4 + j] = color[j];
+        }
+        data.data[i*4 + 3] = data.data[i*4 + 3] < alphaLimit ? 0 : 255;
+    }
+    ctx.putImageData(data, 0, 0);
+}
 
-                data.data[i + j] = Math.floor(pix[i + j] / 255) * 255;
-            }
-            else {
-                
-                data.data[i + j] = clamp(Math.round(pix[i + j] / 85) * 85, 0, 255);
+
+const addBlackBorder = (src : HTMLCanvasElement, startRow : number, endRow = src.height) : void => {
+
+    let ctx = src.getContext("2d") as CanvasRenderingContext2D;
+    let data = ctx.getImageData(0, 0, src.width, src.height);
+    let pixels = Uint8ClampedArray.from(data.data);
+
+    let i : number;
+    let index : number;
+    for (let y = startRow+1; y < endRow-1; ++ y) {
+
+        i = y * src.width + 1;
+        for (let x = 1; x < src.width-1; ++ x, ++ i) {
+
+            if (pixels[i*4 + 3] == 255) {
+
+                for (let j = y-1; j <= y+1; ++ j) {
+
+                    for (let k = x-1; k <= x+1; ++ k) {
+
+                        index = j*src.width + k;
+                        if (pixels[index*4 + 3] == 0) {
+
+                            data.data[index*4] = 0;
+                            data.data[index*4 + 1] = 0;
+                            data.data[index*4 + 2] = 0;
+                            data.data[index*4 + 3] = 255;
+                        }
+                    }
+                }
             }
         }
-        data.data[i + 3] = pix[i + 3] < alphaLimit ? 0 : 255;
     }
-
     ctx.putImageData(data, 0, 0);
 }
 
@@ -162,9 +188,11 @@ export const generateFreeStyleBitmap = (width : number, height : number,
 }
 
 
-export const generateFont = (font : string, charWidth : number, charHeight : number, 
-    mono = false, alphaLimit = 64, primaryColor : [number, number, number] = [255, 255, 255],
-    depthEffectHeight = 0, secondaryColor : [number, number, number] = [0, 0, 0]) : Bitmap => {
+export const generateFont = (font : string, 
+    charWidth : number, charHeight : number, 
+    rowStart = 0, rowEnd = 16,
+    alphaLimit = 64, color : [number, number, number] = [255, 255, 255],
+    blackBorder = false) : Bitmap => {
 
     let width = charWidth * 16;
     let height = charHeight * 16;
@@ -178,31 +206,24 @@ export const generateFont = (font : string, charWidth : number, charHeight : num
     ctx.font = font;
     ctx.textAlign = "center";
 
-    let i : number;
-    for (let z = depthEffectHeight; z >= 0; -- z) {
+    ctx.fillStyle = getColorString(...color, 1.0);
 
-        if (z == 0) {
+    let i = rowStart*16;
+    for (let y = rowStart; y < rowEnd; ++ y) {
 
-            ctx.fillStyle = getColorString(...primaryColor, 1.0);
-        }
-        else {
+        for (let x = 0; x < 16; ++ x) {
 
-            ctx.fillStyle = getColorString(...secondaryColor, 1.0);
-        }
-
-        i = 0;
-        for (let y = 0; y < 16; ++ y) {
-
-            for (let x = 0; x < 16; ++ x) {
-
-                ctx.fillText(String.fromCharCode(i ++),
-                    (x + 0.5) * charWidth + z, 
-                    (y + 0.67) * charHeight + z);
-            }
+            ctx.fillText(String.fromCharCode(i ++),
+                (x + 0.5) * charWidth, 
+                (y + 0.67) * charHeight);
         }
     }
 
-    convertToRGB222(canvas, alphaLimit, mono);
+    convertToMono(canvas, color, alphaLimit);
+    if (blackBorder) {
+
+        addBlackBorder(canvas, rowStart * charHeight, rowEnd * charHeight);
+    }
 
     return canvas;
 }
