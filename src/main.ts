@@ -16,7 +16,10 @@ window.onload = () => {
             .addAction("down", "ArrowDown", "KeyS")
             .addAction("fire1", "KeyZ")
             .addAction("fire2", "KeyX")
-            .addAction("start", "Enter");
+            .addAction("start", "Enter")
+            .addAction("select", "Space");
+
+        event.audio.setGlobalVolume(0.50);
 
         game = new Game(event);
 

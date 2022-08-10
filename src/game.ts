@@ -1,6 +1,7 @@
 import { convert2BitImageToRGB222, generateFont, generateFreeStyleBitmap, generateRGB222LookupTable, loadBitmap, RGB222LookupTable } from "./bitmapgen.js";
 import { Bitmap, Canvas, TextAlign } from "./canvas.js";
 import { CoreEvent } from "./core.js";
+import { KeyState } from "./keyboard.js";
 
 
 const RABBIT_BLOCK1 = [
@@ -40,6 +41,34 @@ const RABBIT_PALETTE = [
 const HINT_TEXT = "Press SPACE to play sounds.  ";
 
 
+type SampleInfo = {sequence : number[][], volume : number, type : OscillatorType};
+const TEST_SAMPLES = [
+    {
+        sequence: [[128, 4], [144, 6], [160, 12]],
+        volume: 0.6,
+        type: <OscillatorType> "square"
+    },
+
+    {
+        sequence: [[224, 4], [160, 6], [128, 12]],
+        volume: 0.7,
+        type: <OscillatorType> "sine"
+    },
+
+    {
+        sequence: [[172, 10], [144, 16]],
+        volume: 0.7,
+        type: <OscillatorType> "sawtooth"
+    },
+
+    {
+        sequence: [[128, 4], [144, 4], [128, 4], [100, 4], [128, 10]],
+        volume: 0.6,
+        type: <OscillatorType> "triangle"
+    },
+]
+
+
 export class Game {
 
 
@@ -47,6 +76,8 @@ export class Game {
     private backgroundTimer : number = 0.0;
     private hintPos : number = 0.0;
     private hintWidth : number;
+
+    private soundIndex : number = 0;
 
     private bmpRabbit : Bitmap | null = null;
     private bmpBackground : Bitmap | null = null;
@@ -225,6 +256,14 @@ export class Game {
         this.animTimer = (this.animTimer + ANIM_SPEED*event.step) % 4.0;
         this.backgroundTimer = (this.backgroundTimer + BG_SPEED*event.step) % (Math.PI*2);
         this.hintPos = (this.hintPos + HINT_SPEED*event.step) % this.hintWidth;
+
+        let sample : SampleInfo;
+        if (event.keyboard.getActionState("select") == KeyState.Pressed) {
+
+            sample = TEST_SAMPLES[(this.soundIndex ++) % 4];
+
+            event.audio.playSequence(sample.sequence, sample.volume, sample.type);
+        }
     }
 
 

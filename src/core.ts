@@ -1,3 +1,4 @@
+import { AudioPlayer } from "./audioplayer.js";
 import { Canvas } from "./canvas.js";
 import { Keyboard } from "./keyboard.js";
 
@@ -7,12 +8,14 @@ export class CoreEvent {
 
 
     public readonly keyboard : Keyboard;
+    public readonly audio : AudioPlayer;
     public readonly step = 1.0;
 
 
-    constructor(keyboard : Keyboard) {
+    constructor(keyboard : Keyboard, audio : AudioPlayer) {
 
         this.keyboard = keyboard;
+        this.audio = audio;
     }
 }
 
@@ -26,6 +29,7 @@ export class Core {
 
     private canvas : Canvas;
     private keyboard : Keyboard;
+    private audio : AudioPlayer;
     private event : CoreEvent;
 
     private timeSum = 0.0;
@@ -39,7 +43,8 @@ export class Core {
 
         this.canvas = new Canvas(canvasWidth, canvasHeight);
         this.keyboard = new Keyboard();
-        this.event = new CoreEvent(this.keyboard);
+        this.audio = new AudioPlayer();
+        this.event = new CoreEvent(this.keyboard, this.audio);
     }
 
 
@@ -56,7 +61,9 @@ export class Core {
         while ((refreshCount --) > 0) {
 
             this.updateCallback(this.event);
+            
             this.keyboard.update();
+            this.audio.update(this.event);
 
             this.timeSum -= FRAME_WAIT;
         }
