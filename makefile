@@ -34,3 +34,8 @@ pack: minify
 #	test -f dist.zip && rm dist.zip
 	(cd temp; zip -r ../dist.zip .)
 	advzip -z dist.zip
+
+
+playtest: pack
+	mkdir -p play
+	unzip -d play dist.zip

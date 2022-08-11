@@ -18,7 +18,7 @@ window.onload = () => {
             .addAction("fire2", "KeyX")
             .addAction("start", "Enter")
             .addAction("select", "Space");
-
+            
         event.audio.setGlobalVolume(0.50);
 
         game = new Game(event);

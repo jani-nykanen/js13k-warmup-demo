@@ -1,9 +1,9 @@
-import { AudioPlayer } from "./audioplayer.js";
 import { convert2BitImageToRGB222, generateFont, generateFreeStyleBitmap, generateRGB222LookupTable, loadBitmap, RGB222LookupTable } from "./bitmapgen.js";
 import { Bitmap, Canvas, TextAlign } from "./canvas.js";
 import { CoreEvent } from "./core.js";
 import { KeyState } from "./keyboard.js";
 import { Ramp, Sample } from "./sample.js";
+import { Satellite } from "./satellite.js";
 
 
 const RABBIT_BLOCK1 = [
@@ -18,25 +18,53 @@ const RABBIT_BLOCK2 = [
     0b100100,
     -1
 ];
+const BIG_ORB_BLOCK1 = [
+    0,
+    0b111000,
+    0b100000,
+    -1
+];
+const BIG_ORB_BLOCK2 = [
+    0,
+    0b010000,
+    0b100000,
+    -1
+];
+const SMALL_ORB_BLOCK1 = [
+    0,
+    0b101111,
+    0b011011,
+    -1
+];
 
+const SMALL_ORB_BLOCK2 =[
+    0,
+    0b000110,
+    0b011011,
+    -1
+];
 
 const RABBIT_PALETTE = [
     // Line 1
     RABBIT_BLOCK1, RABBIT_BLOCK1, RABBIT_BLOCK1, RABBIT_BLOCK1, 
     RABBIT_BLOCK1, RABBIT_BLOCK1, RABBIT_BLOCK1, RABBIT_BLOCK1,
     RABBIT_BLOCK1, RABBIT_BLOCK1, RABBIT_BLOCK1, RABBIT_BLOCK1,
+    BIG_ORB_BLOCK1, BIG_ORB_BLOCK2,
     // Line 2
     RABBIT_BLOCK1, RABBIT_BLOCK1, RABBIT_BLOCK1, RABBIT_BLOCK1, 
     RABBIT_BLOCK1, RABBIT_BLOCK1, RABBIT_BLOCK1, RABBIT_BLOCK1,
     RABBIT_BLOCK1, RABBIT_BLOCK1, RABBIT_BLOCK1, RABBIT_BLOCK1,
+    BIG_ORB_BLOCK2, BIG_ORB_BLOCK2,
     // Line 3
     RABBIT_BLOCK1, RABBIT_BLOCK1, RABBIT_BLOCK1, RABBIT_BLOCK1, 
     RABBIT_BLOCK1, RABBIT_BLOCK1, RABBIT_BLOCK1, RABBIT_BLOCK1,
     RABBIT_BLOCK1, RABBIT_BLOCK1, RABBIT_BLOCK1, RABBIT_BLOCK1,
+    SMALL_ORB_BLOCK1, SMALL_ORB_BLOCK2,
     // Line 4
     RABBIT_BLOCK2, RABBIT_BLOCK2, RABBIT_BLOCK2, RABBIT_BLOCK2,
     RABBIT_BLOCK2, RABBIT_BLOCK2, RABBIT_BLOCK2, RABBIT_BLOCK2,
     RABBIT_BLOCK2, RABBIT_BLOCK2, RABBIT_BLOCK2, RABBIT_BLOCK2,
+    SMALL_ORB_BLOCK2, SMALL_ORB_BLOCK2,
 ];
 
 
@@ -51,6 +79,8 @@ export class Game {
     private bottomTextPos : number = 0.0;
     private hintPos : number = 0.0;
     private hintWidth : number;
+
+    private satellites : Array<Satellite>;
 
     private soundIndex : number = 0;
     private samples : Array<Sample>;
@@ -78,6 +108,11 @@ export class Game {
         this.generateBitmaps();
 
         this.hintWidth = HINT_TEXT.length * 8;
+
+        this.satellites = new Array<Satellite> (2);
+
+        this.satellites[0] = new Satellite(80, 64, 96, 12, Math.PI/8, 1.0/120.0);
+        this.satellites[1] = new Satellite(80, 64, 96, 12, -Math.PI/8, 1.0/120.0, 0.5);
     }
 
 
@@ -261,6 +296,11 @@ export class Game {
             event.audio.playSample(this.samples[this.soundIndex]);
             this.soundIndex = (this.soundIndex + 1) % 4;
         }
+
+        for (let s of this.satellites) {
+
+            s.update(event);
+        }
     }
 
 
@@ -272,10 +312,21 @@ export class Game {
             return;
         }
 
-        canvas.clear(170);
-
+        // canvas.clear(170);
         this.drawBackground(canvas);
+
+        for (let i = 0; i < this.satellites.length; ++ i) {
+
+            this.satellites[i].drawBack(canvas, this.bmpRabbit as Bitmap, i);
+        }
+
         this.drawRabbit(canvas);
+
+        for (let i = 0; i < this.satellites.length; ++ i) {
+
+            this.satellites[i].drawFront(canvas, this.bmpRabbit as Bitmap, i);
+        }
+
         this.drawTextContent(canvas);
     }
 
