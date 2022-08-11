@@ -157,7 +157,7 @@ export const loadBitmapRGB222 = (path : string,
     lookup : RGB222LookupTable, palette : Array<number[]>,
     callback : (bmp : Bitmap) => void) : Bitmap => {
 
-    let image = new Image();
+    let image = document.createElement('img');
     let canvas = document.createElement("canvas");
 
     image.onload = () => {
