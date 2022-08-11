@@ -1,12 +1,11 @@
 import { CoreEvent } from "./core.js";
-import { Sample } from "./sample.js";
+import { Ramp, Sample } from "./sample.js";
 
 
 export class AudioPlayer {
 
 
     private ctx : AudioContext;
-    private gain : GainNode;
 
     private globalVolume : number;
     private enabled : boolean;
@@ -15,15 +14,17 @@ export class AudioPlayer {
     constructor(globalVolume = 1.0) {
 
         this.ctx = new AudioContext();
-        this.gain = new GainNode(this.ctx);
 
         this.enabled = true;
-
         this.globalVolume = globalVolume;
     }
 
 
-    public createSample = (sequence : number[][], type : OscillatorType = "square") : Sample => (new Sample(this.ctx, this.gain, sequence, type));
+    public createSample = (sequence : number[][], 
+        baseVolume = 1.0,
+        type : OscillatorType = "square",
+        ramp : Ramp = Ramp.Exponential,
+        fadeVolumeFactor : number = 0.5) : Sample => (new Sample(this.ctx, sequence, baseVolume, type, ramp, fadeVolumeFactor));
 
 
     public playSample(s : Sample, volume = 1.0) : void {

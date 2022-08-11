@@ -3,7 +3,7 @@ import { convert2BitImageToRGB222, generateFont, generateFreeStyleBitmap, genera
 import { Bitmap, Canvas, TextAlign } from "./canvas.js";
 import { CoreEvent } from "./core.js";
 import { KeyState } from "./keyboard.js";
-import { Sample } from "./sample.js";
+import { Ramp, Sample } from "./sample.js";
 
 
 const RABBIT_BLOCK1 = [
@@ -69,10 +69,10 @@ export class Game {
 
         this.samples = new Array<Sample> ();
         this.samples.push(
-            audio.createSample([[128, 4], [144, 6], [160, 12]], "square"),
-            audio.createSample([[192, 6], [240, 6], [192, 6], [160, 12]], "triangle"),
-            audio.createSample([[224, 4], [192, 6], [176, 12]], "sawtooth"),
-            audio.createSample([[240, 12], [200, 12]], "sine")
+            audio.createSample([[128, 4], [144, 6], [160, 12]], 0.30, "square", Ramp.Exponential, 0.50),
+            audio.createSample([[192, 6], [240, 6], [192, 6], [160, 20]], 0.70, "triangle", Ramp.Instant, 0.20),
+            audio.createSample([[256, 6], [192, 8], [160, 12]], 0.30, "sawtooth", Ramp.Linear),
+            audio.createSample([[256, 6], [320, 8], [224, 20]], 0.70, "sine", Ramp.Exponential, 0.10)
         )
 
         this.generateBitmaps();
@@ -248,7 +248,6 @@ export class Game {
         const BG_SPEED = 0.05;
         const BOTTOM_TEXT_SPEED = 160.0 / 240.0; // 160 = canvas.width ...
         const HINT_SPEED = 1.0;
-        const SAMPLE_VOL = [0.30, 0.60, 0.40, 0.70];
 
         if (!this.loaded) return;
 
@@ -259,7 +258,7 @@ export class Game {
 
         if (event.keyboard.getActionState("select") == KeyState.Pressed) {
 
-            event.audio.playSample(this.samples[this.soundIndex], SAMPLE_VOL[this.soundIndex]);
+            event.audio.playSample(this.samples[this.soundIndex]);
             this.soundIndex = (this.soundIndex + 1) % 4;
         }
     }
