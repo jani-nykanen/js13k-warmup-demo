@@ -61,9 +61,7 @@ export class Core {
         while ((refreshCount --) > 0) {
 
             this.updateCallback(this.event);
-            
             this.keyboard.update();
-            this.audio.update(this.event);
 
             this.timeSum -= FRAME_WAIT;
         }

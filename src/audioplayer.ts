@@ -2,18 +2,11 @@ import { CoreEvent } from "./core.js";
 import { Sample } from "./sample.js";
 
 
-// TODO: This is from last year's project.  Might
-// be good idea to rewrite some (more) parts of it,
-// or at least check they work
-
-
 export class AudioPlayer {
 
 
     private ctx : AudioContext;
     private gain : GainNode;
-
-    private samplePipe : Array<Sample>;
 
     private globalVolume : number;
     private enabled : boolean;
@@ -23,26 +16,10 @@ export class AudioPlayer {
 
         this.ctx = new AudioContext();
         this.gain = new GainNode(this.ctx);
-        this.samplePipe = new Array<Sample> ();
 
         this.enabled = true;
 
         this.globalVolume = globalVolume;
-    }
-
-
-    public update(event : CoreEvent) : void {
-
-        let s : Sample;
-        for (let i = 0; i < this.samplePipe.length; ++ i) {
-
-            s = this.samplePipe[i];
-            s.update(event);
-            if (!s.isPlaying()) {
-
-                this.samplePipe.splice(i, 1);
-            }
-        }
     }
 
 
@@ -51,7 +28,6 @@ export class AudioPlayer {
 
     public playSample(s : Sample, volume = 1.0) : void {
 
-        this.samplePipe.push(s);
         s.play(volume * this.globalVolume);
     }
 

@@ -48,6 +48,7 @@ export class Game {
 
     private animTimer : number = 0.0;
     private backgroundTimer : number = 0.0;
+    private bottomTextPos : number = 0.0;
     private hintPos : number = 0.0;
     private hintWidth : number;
 
@@ -189,35 +190,44 @@ export class Game {
     }
 
 
-    private drawTextContent(canvas : Canvas) : void {
+    private drawBottomTextBase(canvas : Canvas, shiftx = 0.0) {
 
-        const BOTTOM_TEXT = "Have fun!";
-        const BOTTOM_TEXT_XOFF = -18;
+        const TEXT = "Have fun!";
+        const BOTTOM_OFF = 48;
+        const XOFF = -16;
 
-        let xoff = BOTTOM_TEXT_XOFF + (Math.sin(this.backgroundTimer*2)+1)*12 / BOTTOM_TEXT.length;
-
-        let cw = 32 + xoff;
-        let dx = canvas.width/2 - BOTTOM_TEXT.length * cw / 2;
+        let cw = 32 + XOFF;
+        let dx = canvas.width/2 - TEXT.length * cw / 2 + this.bottomTextPos + shiftx;
         let dy = 0;
-        let period = Math.PI*2.0 / BOTTOM_TEXT.length;
+        let period = Math.PI*2.0 / TEXT.length;
+        let phaseShift = Math.PI*2 * (this.bottomTextPos / canvas.width);
 
         let k : number;
         for (let i = 1; i >= 0; -- i) {
 
             k = 0;
-            for (let j = 0; j < BOTTOM_TEXT.length; ++ j) {
+            for (let j = 0; j < TEXT.length; ++ j) {
 
-                if (BOTTOM_TEXT.charAt(j) == ' ')
+                if (TEXT.charAt(j) == ' ')
                     continue;
 
                 ++ k;
-                dy = Math.round(Math.sin(this.backgroundTimer + period*k) * 8);
+                dy = -Math.round(Math.sin(this.backgroundTimer + period*k + phaseShift) * 16);
 
-                canvas.drawText(this.bmpFontBig, BOTTOM_TEXT.charAt(j), 
+                canvas.drawText(this.bmpFontBig, TEXT.charAt(j), 
                     Math.round(dx + j*cw) + i, 
-                    canvas.height-36 + i + dy, 
-                    xoff, 0, TextAlign.Center);
+                    canvas.height - BOTTOM_OFF + i + dy, 
+                    XOFF, 0, TextAlign.Center);
             }
+        }
+    }
+
+
+    private drawTextContent(canvas : Canvas) : void {
+
+        for (let i = 0; i < 2; ++ i) {
+            
+            this.drawBottomTextBase(canvas, -i * canvas.width);
         }
 
         canvas.setFillColor(0, 0, 0, 0.33)
@@ -236,6 +246,7 @@ export class Game {
 
         const ANIM_SPEED = 1.0 / 8.0;
         const BG_SPEED = 0.05;
+        const BOTTOM_TEXT_SPEED = 160.0 / 240.0; // 160 = canvas.width ...
         const HINT_SPEED = 1.0;
         const SAMPLE_VOL = [0.30, 0.60, 0.40, 0.70];
 
@@ -243,6 +254,7 @@ export class Game {
 
         this.animTimer = (this.animTimer + ANIM_SPEED*event.step) % 4.0;
         this.backgroundTimer = (this.backgroundTimer + BG_SPEED*event.step) % (Math.PI*2);
+        this.bottomTextPos = (this.bottomTextPos + BOTTOM_TEXT_SPEED*event.step) % 160;
         this.hintPos = (this.hintPos + HINT_SPEED*event.step) % this.hintWidth;
 
         if (event.keyboard.getActionState("select") == KeyState.Pressed) {
