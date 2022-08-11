@@ -1,3 +1,7 @@
+# Change this before compiling!
+CLOSURE_PATH := closure/closure.jar
+
+
 .PHONY: js
 js:
 	mkdir -p js
@@ -23,7 +27,7 @@ all: js
 
 minify: js_full
 	mkdir -p temp
-	java -jar closure/closure.jar --js js/*.js --js_output_file temp/out.js --compilation_level ADVANCED_OPTIMIZATIONS --language_out ECMASCRIPT_2021
+	java -jar $(CLOSURE_PATH) --js js/*.js --js_output_file temp/out.js --compilation_level ADVANCED_OPTIMIZATIONS --language_out ECMASCRIPT_2021
 	cat misc/index_top.txt > temp/index.html
 	cat temp/out.js >> temp/index.html
 	cat misc/index_bottom.txt >> temp/index.html
