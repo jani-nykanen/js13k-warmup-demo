@@ -1,4 +1,4 @@
-import { convert2BitImageToRGB222, generateFont, generateFreeStyleBitmap, generateRGB222LookupTable, loadBitmap, RGB222LookupTable } from "./bitmapgen.js";
+import { generateFont, generateFreeStyleBitmap, generateRGB222LookupTable, loadBitmapRGB222, RGB222LookupTable } from "./bitmapgen.js";
 import { Bitmap, Canvas, TextAlign } from "./canvas.js";
 import { CoreEvent } from "./core.js";
 import { KeyState } from "./keyboard.js";
@@ -120,11 +120,11 @@ export class Game {
 
         const RABBIT_PATH = "b.png";
 
-        loadBitmap(RABBIT_PATH, (bmp : Bitmap) => {
-
-            this.bmpRabbit = convert2BitImageToRGB222(bmp, lookup, RABBIT_PALETTE);
-            this.loaded = true;
-        });
+        this.bmpRabbit = loadBitmapRGB222(RABBIT_PATH, lookup, RABBIT_PALETTE,
+            () => {
+                this.loaded = true;
+                console.log("Loaded!");
+            });
     }
 
 

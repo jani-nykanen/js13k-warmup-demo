@@ -1,5 +1,4 @@
 import { Bitmap, Canvas, getColorString } from "./canvas.js";
-import { clamp } from "./math.js";
 
 
 const TILE_WIDTH  = 8;
@@ -130,50 +129,51 @@ const addBlackBorder = (src : HTMLCanvasElement, startRow : number, endRow = src
 }
 
 
-export const convert2BitImageToRGB222 = (bmp : Bitmap, 
-    lookup : RGB222LookupTable, palette : Array<number[]>) : Bitmap | null => {
+export const convert2BitImageToRGB222 = (ctx : CanvasRenderingContext2D, 
+    width : number, height : number,
+    lookup : RGB222LookupTable,
+    palette : Array<number[]>) : void => {
 
-    if (bmp == null) 
-        return null;
+    let data = ctx.getImageData(0, 0, width, height);
 
-    let copy = document.createElement("canvas");
-    copy.width = bmp.width;
-    copy.height = bmp.height;
-
-    let ctx = copy.getContext("2d") as CanvasRenderingContext2D;
-    ctx.drawImage(bmp, 0, 0);
-
-    let data = ctx.getImageData(0, 0, bmp.width, bmp.height);
-
-    let w = (bmp.width / TILE_WIDTH)   | 0;
-    let h = (bmp.height / TILE_HEIGHT) | 0;
+    let w = (width / TILE_WIDTH)   | 0;
+    let h = (height / TILE_HEIGHT) | 0;
 
     for (let j = 0; j < h; ++ j) {
 
         for (let i = 0; i < w; ++ i) {
 
-            convertChar(data, bmp.width,
+            convertChar(data, width,
                 i*TILE_WIDTH, j*TILE_HEIGHT, 
                 (i+1)*TILE_WIDTH, (j+1)*TILE_HEIGHT,
                 lookup, palette[j*w + i]);
         }
     }
     ctx.putImageData(data, 0, 0);
-    
-    return copy;
 }
 
 
-export const loadBitmap = (path : string, callback : (bmp : Bitmap) => void) : Bitmap => {
+export const loadBitmapRGB222 = (path : string, 
+    lookup : RGB222LookupTable, palette : Array<number[]>,
+    callback : (bmp : Bitmap) => void) : Bitmap => {
 
     let image = new Image();
+    let canvas = document.createElement("canvas");
+
     image.onload = () => {
 
+        canvas.width = image.width;
+        canvas.height = image.height;
+
+        let ctx = canvas.getContext("2d") as CanvasRenderingContext2D;
+        ctx.drawImage(image, 0, 0);
+
+        convert2BitImageToRGB222(ctx, canvas.width, canvas.height, lookup, palette);
         callback(image);
     }
     image.src = path;
 
-    return image;
+    return canvas;
 }
 
 
