@@ -173,6 +173,8 @@ export const loadBitmapRGB222 = (path : string,
     }
     image.src = path;
 
+    console.log(image);
+
     return canvas;
 }
 
