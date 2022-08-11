@@ -118,7 +118,7 @@ export class Game {
 
     private generateRabbitBitmap(lookup : RGB222LookupTable) : void {
 
-        const RABBIT_PATH = "./b.png";
+        const RABBIT_PATH = "b.png";
 
         this.bmpRabbit = loadBitmapRGB222(RABBIT_PATH, lookup, RABBIT_PALETTE,
             () => {
